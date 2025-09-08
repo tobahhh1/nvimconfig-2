@@ -2,7 +2,7 @@ vim.o.completeopt = "fuzzy,menu,menuone,noinsert,popup"
 
 
 -- Display autocomplete window
-vim.keymap.set('i', '<C-Space>', '<C-x><C-o>', {})
+vim.keymap.set('i', '<C-Space>', '<C-x><C-o>', { silent = true })
 
 
 local function tab_complete()

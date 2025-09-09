@@ -261,3 +261,9 @@ vim.api.nvim_create_autocmd("FileType", {
   end
 })
 
+vim.api.nvim_create_autocmd("BufWritePost", {
+  pattern="*",
+  callback = function()
+    populate_netrw_git_icons()
+  end
+})

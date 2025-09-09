@@ -169,17 +169,17 @@ local function populate_netrw_diagnostics(bufnr)
     local filename = file_info.filename
     if diagnostics[filename] then
       draw_diagnostic(bufnr, line_num, diagnostics[filename])
-    elseif file_info.expanded == false then
-      -- Show nested messages in expanded dirs
-      local min_severity = vim.diagnostic.severity.HINT + 1
-      for candidate_filename, severity in pairs(diagnostics) do
-        if string.find(candidate_filename, "^" .. file_info.filename) and severity < min_severity then
-          min_severity = severity
-        end
-      end
-      if min_severity ~= vim.diagnostic.severity.HINT + 1 then
-        draw_diagnostic(bufnr, line_num, min_severity)
-      end
+    -- elseif file_info.expanded == false then
+    --   -- Show nested messages in expanded dirs
+    --   local min_severity = vim.diagnostic.severity.HINT + 1
+    --   for candidate_filename, severity in pairs(diagnostics) do
+    --     if string.find(candidate_filename, "^" .. file_info.filename) and severity < min_severity then
+    --       min_severity = severity
+    --     end
+    --   end
+    --   if min_severity ~= vim.diagnostic.severity.HINT + 1 then
+    --     draw_diagnostic(bufnr, line_num, min_severity)
+    --   end
     end
   end
 end

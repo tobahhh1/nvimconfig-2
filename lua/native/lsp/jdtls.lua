@@ -1,4 +1,4 @@
 vim.lsp.config("jdtls", {
-	cmd={"jdtls"}
+  root_markers={".git"}
 })
 vim.lsp.enable("jdtls")

@@ -38,6 +38,13 @@ local function netrw_tree_get_root(_)
   return nil
 end
 
+local function parent_dir(dir)
+  local result, _ = string.gsub(dir, "[^/]*/$", "")
+  return result
+end
+
+local NETRW_INDENT_WIDTH = 2
+
 -- Returns a mapping of the line number in the netrw tree
 -- to the full filename at that line number
 ---@param bufnr integer buffer number of the neovim window
@@ -50,15 +57,17 @@ local function netrw_tree_line_number_to_filename(bufnr)
   local filenames = {}
   for i, line in ipairs(lines) do
     local string_whitespace = string.match(line, "^[%s|]*") or ""
+    local curr_indent_level = string.len(string_whitespace)
     -- tree has 
     -- ../
     -- cwd/
-    -- at the top, so skip that.
-    local curr_indent_level = string.len(string_whitespace)
+    -- | first_dir/
+    -- at the top. So only lines one level down are relevant to us.
     if curr_indent_level ~= 0 then
-      if curr_indent_level < prev_indent_level or (prev_was_dir and curr_indent_level == prev_indent_level) then
-        -- remove last directory from dirpath
-        running_dirpath, _ = string.gsub(running_dirpath, "[^/]*/$", "")
+      local indent_difference = prev_indent_level - curr_indent_level
+      while (indent_difference > 0 or prev_was_dir and indent_difference >= 0) do
+        indent_difference = indent_difference - NETRW_INDENT_WIDTH
+        running_dirpath = parent_dir(running_dirpath)
       end
       local maybe_curr_dirname = dirname_if_directory(line)
       if maybe_curr_dirname then
@@ -81,7 +90,7 @@ local function get_netrw_tree_buffers()
   for _, buf in ipairs(vim.fn.getbufinfo()) do
     if is_netrw_tree(buf.bufnr) then
       table.insert(result, buf.bufnr)
-      end
+    end
   end
   return result
 end
@@ -99,7 +108,7 @@ local severity_to_hl_group = {
 local function draw_diagnostic(bufnr, line, col, severity)
   vim.api.nvim_buf_set_extmark(bufnr, netrw_extmark_namespace, line, col, {
     virt_text={
-      {vim.diagnostic.config().signs.text[severity], severity_to_hl_group[severity]}
+      {"  " .. vim.diagnostic.config().signs.text[severity], severity_to_hl_group[severity]}
     },
     virt_text_pos = "overlay",
   })
@@ -120,7 +129,7 @@ local function populate_netrw_diagnostics(bufnr)
 
   for line_num, filename in pairs(line_number_to_filename) do
     if diagnostics[filename] then
-      draw_diagnostic(bufnr, line_num, 0, diagnostics[filename])
+      draw_diagnostic(bufnr, line_num, -1, diagnostics[filename])
     end
   end
 end
@@ -136,10 +145,23 @@ vim.diagnostic.handlers["netrw/redraw_diagnostics"] = {
 }
 
 vim.api.nvim_create_autocmd("FileType", {
-  pattern="*",
+  pattern="netrw",
   callback = function()
-    if vim.bo.filetype == "netrw" then
-      populate_netrw_diagnostics()
-    end
+    populate_netrw_diagnostics()
   end
 })
+
+-- local last_netrw_lines = {}
+
+-- vim.api.nvim_create_autocmd({"CursorHold", "CursorMoved"}, {
+--   pattern = "*NetrwTreeListing*",
+--   callback = function()
+--     local buf = vim.api.nvim_get_current_buf()
+--     local lines = vim.api.nvim_buf_get_lines(buf, 0, -1, false)
+--     local hash = table.concat(lines, "\n")
+--     if hash ~= last_netrw_lines[buf] then
+--       print("buf", buf)
+--       populate_netrw_diagnostics(buf)
+--     end
+--   end
+-- })

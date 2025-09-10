@@ -1,6 +1,7 @@
 vim.g.netrw_liststyle = 3
 vim.g.netrw_banner = 0
 vim.g.netrw_winsize = 30
+vim.g.netrw_fastbrowse = 2
 
 vim.keymap.set('n', '\\', '<cmd>Lex!<cr>')
 
@@ -98,6 +99,15 @@ end
 local netrw_tree_buffers = {}
 
 local function get_netrw_tree_buffers()
+  local buffers_to_remove = {}
+  for bufnr, _ in pairs(netrw_tree_buffers) do
+    if not vim.api.nvim_buf_is_valid(bufnr) then
+      buffers_to_remove[bufnr] = true
+    end
+  end
+  for bufnr, _ in pairs(buffers_to_remove) do
+    netrw_tree_buffers[bufnr] = nil
+  end
   return netrw_tree_buffers
 end
 
@@ -166,7 +176,7 @@ local function populate_netrw_diagnostics(bufnr)
 
   for line_num, file_info in pairs(line_number_to_file_info) do
     local filename = file_info.filename
-    if diagnostics[filename] then
+    if not file_info.expanded and diagnostics[filename] then
       draw_diagnostic(bufnr, line_num, diagnostics[filename])
     end
   end
@@ -209,12 +219,47 @@ local function list_to_set(list)
   return set
 end
 
+local function get_all_roots(fname)
+  local full_root = "/"
+  local result = {}
+  for root in string.gmatch(fname, "([^/]+/?)") do
+    full_root = full_root .. root
+    table.insert(result, full_root)
+  end
+  return result
+end
+
+local function map(func, tbl)
+  local result = {}
+  for i, val in ipairs(tbl) do
+    result[i] = func(val)
+  end
+  return result
+end
+
+local function flatten(nestedTable)
+    local flatTable = {}
+
+    local function deepFlatten(currentTable)
+        for _, value in ipairs(currentTable) do
+            if type(value) == "table" then
+                deepFlatten(value) -- Recursively flatten sub-tables
+            else
+                table.insert(flatTable, value) -- Add non-table elements to the flat table
+            end
+        end
+    end
+
+    deepFlatten(nestedTable)
+    return flatTable
+end
+
 local git_cache = { unstaged = {}, staged = {}, unmerged = {} }
 
 local function refresh_git_cache()
-  git_cache.unstaged = list_to_set(git_unstaged_changes())
-  git_cache.staged   = list_to_set(git_staged_changes())
-  git_cache.unmerged = list_to_set(git_unmerged_changes())
+  git_cache.unstaged = list_to_set(flatten(map(get_all_roots, git_unstaged_changes())))
+  git_cache.staged   = list_to_set(flatten(map(get_all_roots, git_staged_changes())))
+  git_cache.unmerged = list_to_set(flatten(map(get_all_roots, git_unmerged_changes())))
 end
 -- call on load so it's populated before first draw
 refresh_git_cache()
@@ -233,7 +278,9 @@ local function populate_netrw_git_icons(bufnr)
 
   for line_num, file_info in pairs(line_number_to_file_info) do
     local filename = file_info.filename
-    draw_git_icons(bufnr, line_num, git_cache.unstaged[filename], git_cache.staged[filename], git_cache.unmerged[filename])
+    if not file_info.expanded then
+      draw_git_icons(bufnr, line_num, git_cache.unstaged[filename], git_cache.staged[filename], git_cache.unmerged[filename])
+    end
   end
 end
 
@@ -279,13 +326,6 @@ vim.api.nvim_create_autocmd("FileType", {
       populate_netrw_icons(bufnr)
     end
 
-  end
-})
-
-vim.api.nvim_create_autocmd("BufWipeout", {
-  pattern = "netrw",
-  callback = function(args)
-    netrw_tree_buffers[args.buf] = nil
   end
 })
 

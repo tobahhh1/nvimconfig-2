@@ -5,31 +5,34 @@ vim.g.netrw_winsize = 30
 vim.keymap.set('n', '\\', '<cmd>Lex!<cr>')
 
 
+MaxDiagSeverityByFileCache = {}
 -- Returns a lookup table where, if a file has diagnostics,
 -- it will be an entry in the table, and the most severe diagnostic
 -- message is displayed.
-local function max_diag_severity_by_file()
+local function max_diag_severity_by_file(diagnostics)
   local lookup = {}
-  for _, d in ipairs(vim.diagnostic.get()) do
+  for _, d in ipairs(diagnostics or vim.diagnostic.get()) do
     local fname = vim.api.nvim_buf_get_name(d.bufnr)
     if fname ~= "" then
-      fname = vim.fs.normalize(fname)
-      local severity = lookup[fname] or vim.diagnostic.severity.HINT + 1
-      if d.severity < severity then
-        lookup[fname] = d.severity
+      local full_root = "/"
+      for root in string.gmatch(fname, "([^/]+/?)") do
+        full_root = full_root .. root
+        local severity = lookup[full_root] or vim.diagnostic.severity.HINT + 1
+        if d.severity < severity then
+          lookup[full_root] = d.severity
+        end
       end
     end
   end
   return lookup
 end
 
-
 local function dirname_if_directory(filename)
   return string.match(filename, "[^%s|]*/$")
 end
 
-local function is_netrw_tree(bufnr)
-  return not not string.find(vim.api.nvim_buf_get_name(bufnr), "NetrwTreeListing$")
+local function is_netrw_tree(buf)
+  return not not string.find(buf.name, "NetrwTreeListing$")
 end
 
 local function netrw_tree_get_root(_)
@@ -92,14 +95,10 @@ local function netrw_tree_line_number_to_file_info(bufnr)
   return filenames
 end
 
+local netrw_tree_buffers = {}
+
 local function get_netrw_tree_buffers()
-  local result = {}
-  for _, buf in ipairs(vim.fn.getbufinfo()) do
-    if is_netrw_tree(buf.bufnr) then
-      table.insert(result, buf.bufnr)
-    end
-  end
-  return result
+  return netrw_tree_buffers
 end
 
 
@@ -155,31 +154,20 @@ end
 ---@param bufnr integer? buffer to populate diagnostics on. nil for all netrw bufs.
 local function populate_netrw_diagnostics(bufnr)
   if not bufnr then
-    for _, netrw_bufnr in ipairs(get_netrw_tree_buffers()) do
+    for netrw_bufnr, _ in pairs(get_netrw_tree_buffers()) do
       populate_netrw_diagnostics(netrw_bufnr)
     end
     return
   end
 
   vim.api.nvim_buf_clear_namespace(bufnr, netrw_extmark_diagnostic_namespace, 0, -1)
-  local diagnostics = max_diag_severity_by_file()
+  local diagnostics = MaxDiagSeverityByFileCache
   local line_number_to_file_info = netrw_tree_line_number_to_file_info(bufnr)
 
   for line_num, file_info in pairs(line_number_to_file_info) do
     local filename = file_info.filename
     if diagnostics[filename] then
       draw_diagnostic(bufnr, line_num, diagnostics[filename])
-    -- elseif file_info.expanded == false then
-    --   -- Show nested messages in expanded dirs
-    --   local min_severity = vim.diagnostic.severity.HINT + 1
-    --   for candidate_filename, severity in pairs(diagnostics) do
-    --     if string.find(candidate_filename, "^" .. file_info.filename) and severity < min_severity then
-    --       min_severity = severity
-    --     end
-    --   end
-    --   if min_severity ~= vim.diagnostic.severity.HINT + 1 then
-    --     draw_diagnostic(bufnr, line_num, min_severity)
-    --   end
     end
   end
 end
@@ -199,6 +187,7 @@ local function to_absolute_paths(relative_paths)
   end
   return result
 end
+
 
 local function git_unstaged_changes()
   return to_absolute_paths(split(vim.fn.system("git diff --name-only"), "\n"))
@@ -220,50 +209,90 @@ local function list_to_set(list)
   return set
 end
 
+local git_cache = { unstaged = {}, staged = {}, unmerged = {} }
+
+local function refresh_git_cache()
+  git_cache.unstaged = list_to_set(git_unstaged_changes())
+  git_cache.staged   = list_to_set(git_staged_changes())
+  git_cache.unmerged = list_to_set(git_unmerged_changes())
+end
+-- call on load so it's populated before first draw
+refresh_git_cache()
 
 local function populate_netrw_git_icons(bufnr)
   if not bufnr then
-    for _, netrw_bufnr in ipairs(get_netrw_tree_buffers()) do
+    for netrw_bufnr, _ in pairs(get_netrw_tree_buffers()) do
       populate_netrw_git_icons(netrw_bufnr)
     end
     return
   end
 
   vim.api.nvim_buf_clear_namespace(bufnr, netrw_extmark_git_namespace, 0, -1)
-  local unstaged = list_to_set(git_unstaged_changes())
-  local staged = list_to_set(git_staged_changes())
-  local unmerged = list_to_set(git_unmerged_changes())
 
   local line_number_to_file_info = netrw_tree_line_number_to_file_info(bufnr)
 
   for line_num, file_info in pairs(line_number_to_file_info) do
     local filename = file_info.filename
-    draw_git_icons(bufnr, line_num, unstaged[filename], staged[filename], unmerged[filename])
+    draw_git_icons(bufnr, line_num, git_cache.unstaged[filename], git_cache.staged[filename], git_cache.unmerged[filename])
   end
 end
 
-vim.diagnostic.handlers["netrw/redraw_diagnostics"] = {
-  show = function(_, _, _, _)
-    populate_netrw_diagnostics()
-    populate_netrw_git_icons()
-  end,
-  hide = function(_, _)
-    populate_netrw_diagnostics()
-    populate_netrw_git_icons()
+
+
+local function populate_netrw_icons(bufnr)
+  populate_netrw_diagnostics(bufnr)
+  populate_netrw_git_icons(bufnr)
+end
+
+local diag_timer
+local function update_max_diag_severity()
+  if diag_timer then
+    diag_timer:stop()
+    diag_timer:close()
   end
-}
+  diag_timer = vim.defer_fn(function()
+    MaxDiagSeverityByFileCache = max_diag_severity_by_file()
+    populate_netrw_icons()
+    diag_timer = nil
+  end, diag_timer and 100 or 0)
+end
+
+vim.api.nvim_create_autocmd("DiagnosticChanged", {
+  callback = function()
+    update_max_diag_severity()
+  end
+})
 
 vim.api.nvim_create_autocmd("FileType", {
   pattern="netrw",
-  callback = function()
-    populate_netrw_diagnostics()
-    populate_netrw_git_icons()
+  callback = function(args)
+    local bufnr = args.buf
+    local bufname = vim.api.nvim_buf_get_name(args.buf)
+    if not netrw_tree_buffers[bufnr] then
+      if is_netrw_tree({
+        name = bufname
+      }) then
+        netrw_tree_buffers[bufnr] = true
+        populate_netrw_icons(bufnr)
+      end
+    else
+      populate_netrw_icons(bufnr)
+    end
+
+  end
+})
+
+vim.api.nvim_create_autocmd("BufWipeout", {
+  pattern = "netrw",
+  callback = function(args)
+    netrw_tree_buffers[args.buf] = nil
   end
 })
 
 vim.api.nvim_create_autocmd("BufWritePost", {
   pattern="*",
   callback = function()
+    refresh_git_cache()
     populate_netrw_git_icons()
   end
 })

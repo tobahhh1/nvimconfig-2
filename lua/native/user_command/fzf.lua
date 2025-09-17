@@ -38,7 +38,7 @@ local function fzf_search_help()
   fzf_wrap_and_run({
     source = helptags,
     sink = 'help',
-    right = '40%',
+    window="0",
   })
 end
 
@@ -49,7 +49,7 @@ local function fzf_search_files()
   fzf_wrap_and_run({
     sink = 'e',
     options = '--preview "cat {}" --preview-window=down,40%',
-    right = '40%',
+    window = "0"
   })
 end
 

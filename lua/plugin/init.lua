@@ -7,4 +7,3 @@ require('nvim-treesitter.configs').setup {
 }
 
 require('tbrow').setup({})
-

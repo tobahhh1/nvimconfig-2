@@ -3,6 +3,8 @@
 -- is officially supported by Neovim and mentioned multiple times in the default 
 -- helpdocs. Seems safe.
 require('nvim-treesitter.configs').setup {
-    ensure_installed = { "java", "lua" }
+  ensure_installed = { "java", "lua" }
 }
+
+require('tbrow').setup({})
 

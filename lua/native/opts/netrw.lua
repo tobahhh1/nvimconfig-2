@@ -3,9 +3,6 @@ vim.g.netrw_banner = 0
 vim.g.netrw_winsize = 30
 vim.g.netrw_fastbrowse = 2
 
-vim.keymap.set('n', '\\', '<cmd>Lex!<cr>')
-
-
 MaxDiagSeverityByFileCache = {}
 -- Returns a lookup table where, if a file has diagnostics,
 -- it will be an entry in the table, and the most severe diagnostic

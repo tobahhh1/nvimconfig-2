@@ -7,3 +7,5 @@ require('nvim-treesitter.configs').setup {
 }
 
 require('tbrow').setup({})
+
+vim.keymap.set("n", "\\", "<cmd>Tbrow<cr>", {silent = true})

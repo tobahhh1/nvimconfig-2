@@ -1,5 +1,8 @@
 -- Custom fzf commands
 
+vim.g.fzf_preview_window_opt = "down,60%"
+vim.g.fzf_preview_num_lines = 10
+
 local function get_unique(arr)
   local seen = {}
   local out = {}
@@ -48,7 +51,7 @@ vim.keymap.set('n', '<leader>sh', fzf_search_help, { silent = true })
 local function fzf_search_files()
   fzf_wrap_and_run({
     sink = 'e',
-    options = '--preview "bat --color=always {}" --preview-window=down,40% --ansi',
+    options = '--preview "bat --color=always {}" --preview-window=' .. vim.g.fzf_preview_window_opt .. ' --ansi',
     window = "enew"
   })
 end
@@ -69,8 +72,8 @@ end
 local function fzf_search_ripgrep()
   local rg_prefix = "rg --column --line-number --no-heading --color=always --smart-case"
   local options = ""
-  options = options .. '--preview "bat --color=always {1} --highlight-line {2}" '
-  options = options .. '--preview-window=down,40% '
+  options = options .. '--preview \'LINE={2};LINERANGEBOTTOM=$((LINE-' .. vim.g.fzf_preview_num_lines .. '));LINEMIN=$([ 0 -ge $LINERANGEBOTTOM ] && echo "0" || echo "$LINERANGEBOTTOM"); bat --color=always --highlight-line {2} --line-range=$LINEMIN:$((LINE+' .. vim.g.fzf_preview_num_lines .. ')) {1}\' '
+  options = options .. '--preview-window=' .. vim.g.fzf_preview_window_opt .. ' '
   options = options .. '--bind "start:reload:' .. rg_prefix .. ' {q}" '
   options = options .. '--bind "change:reload:sleep ' .. vim.g.fzf_ripgrep_debounce .. '; ' .. rg_prefix .. ' {q} || true" '
   options = options .. '--delimiter : '

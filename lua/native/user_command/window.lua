@@ -1,8 +1,9 @@
 vim.o.splitright = true
-vim.g.tray_width = 50
 
-vim.api.nvim_create_user_command("Tray", function()
+vim.api.nvim_create_user_command("Vthird", function()
+  local desired_width = math.floor(vim.fn.winwidth(0) / 3)
   vim.cmd("vsplit")
-  vim.api.nvim_win_set_width(0, vim.g.tray_width)
+  vim.api.nvim_win_set_width(0, desired_width)
 end, {})
 
+vim.keymap.set({"n", "v"}, "<C-w>V", "<cmd>Vthird<cr>", {silent = true})

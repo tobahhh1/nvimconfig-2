@@ -59,9 +59,6 @@ end
 vim.api.nvim_create_user_command('FZFFiles', fzf_search_files, {})
 vim.keymap.set('n', '<leader>sf', fzf_search_files, { silent = true })
 
-vim.g.fzf_ripgrep_debounce = '0.05'
-
-
 local function fzf_search_ripgrep_sink(selected_opt)
   local split_colon = string.gmatch(selected_opt, "[^:]+")
   local file = split_colon()
@@ -75,7 +72,7 @@ local function fzf_search_ripgrep()
   options = options .. '--preview \'LINE={2};LINERANGEBOTTOM=$((LINE-' .. vim.g.fzf_preview_num_lines .. '));LINEMIN=$([ 0 -ge $LINERANGEBOTTOM ] && echo "0" || echo "$LINERANGEBOTTOM"); bat --color=always --highlight-line {2} --line-range=$LINEMIN:$((LINE+' .. vim.g.fzf_preview_num_lines .. ')) {1}\' '
   options = options .. '--preview-window=' .. vim.g.fzf_preview_window_opt .. ' '
   options = options .. '--bind "start:reload:' .. rg_prefix .. ' {q}" '
-  options = options .. '--bind "change:reload:sleep ' .. vim.g.fzf_ripgrep_debounce .. '; ' .. rg_prefix .. ' {q} || true" '
+  options = options .. '--bind "change:reload:' .. rg_prefix .. ' {q} || true" '
   options = options .. '--delimiter : '
   options = options .. '--ansi --disabled '
   fzf_wrap_and_run({

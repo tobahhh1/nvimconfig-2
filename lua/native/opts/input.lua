@@ -6,7 +6,7 @@ vim.api.nvim_set_hl(
   0,
   "FloatBorder",
   {
-    fg = default_win_separator_hl.fg,
+    fg = default_win_separator_hl.bg,
     bg = default_normal_text_hl.bg
   }
 )

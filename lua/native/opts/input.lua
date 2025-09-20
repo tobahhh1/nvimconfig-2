@@ -1,12 +1,12 @@
 
 local default_normal_text_hl = vim.api.nvim_get_hl(0, { name = "Normal"})
-local default_win_separator_hl = vim.api.nvim_get_hl(0, { name = "WinSeparator"})
+
 
 vim.api.nvim_set_hl(
   0,
   "FloatBorder",
   {
-    fg = default_win_separator_hl.bg,
+    fg = "#AAFFFF",
     bg = default_normal_text_hl.bg
   }
 )

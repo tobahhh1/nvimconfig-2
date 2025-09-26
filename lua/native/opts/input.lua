@@ -88,5 +88,6 @@ vim.ui.input = function(opts, on_confirm)
     callback = handle_text_changed
   })
 
-  vim.cmd.startinsert()
+  vim.cmd("normal i" .. opts.default)
+  vim.cmd("startinsert!")
 end

@@ -47,6 +47,7 @@ end
 
 vim.api.nvim_create_user_command('FZFHelp', fzf_search_help, {})
 vim.keymap.set('n', '<leader>sh', fzf_search_help, { silent = true })
+vim.keymap.set("n", "<leader>bsh", "<cmd>Vthird FZFHelp<CR>", {silent = true})
 
 local function fzf_search_files()
   fzf_wrap_and_run({
@@ -58,6 +59,7 @@ end
 
 vim.api.nvim_create_user_command('FZFFiles', fzf_search_files, {})
 vim.keymap.set('n', '<leader>sf', fzf_search_files, { silent = true })
+vim.keymap.set("n", "<leader>bsf", "<cmd>Vthird FZFFiles<CR>", {silent = true})
 
 local function fzf_search_ripgrep_sink(selected_opt)
   local split_colon = string.gmatch(selected_opt, "[^:]+")
@@ -86,4 +88,4 @@ end
 
 vim.api.nvim_create_user_command('FZFGrep', fzf_search_ripgrep, {})
 vim.keymap.set('n', '<leader>sg', fzf_search_ripgrep, { silent = true})
-
+vim.keymap.set("n", "<leader>bsg", "<cmd>Vthird FZFGrep<CR>", {silent = true})

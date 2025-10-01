@@ -32,13 +32,13 @@ local function find_helptags()
   return get_unique(tags)
 end
 
-local function fzf_wrap_and_run(args)
-  vim.fn['fzf#run'](vim.fn['fzf#wrap'](args))
+local function fzf_wrap_and_run(...)
+  vim.fn['fzf#run'](vim.fn['fzf#wrap'](...))
 end
 
 local function fzf_search_help()
   local helptags = find_helptags()
-  fzf_wrap_and_run({
+  fzf_wrap_and_run("help", {
     source = helptags,
     sink = 'help',
     window="enew",
@@ -50,7 +50,7 @@ vim.keymap.set('n', '<leader>sh', fzf_search_help, { silent = true })
 vim.keymap.set("n", "<leader>bsh", "<cmd>Vthird FZFHelp<CR>", {silent = true})
 
 local function fzf_search_files()
-  fzf_wrap_and_run({
+  fzf_wrap_and_run("files", {
     sink = 'e',
     options = '--preview "bat --color=always {}" --preview-window=' .. vim.g.fzf_preview_window_opt .. ' --ansi',
     window = "enew"
@@ -77,7 +77,7 @@ local function fzf_search_ripgrep()
   options = options .. '--bind "change:reload:' .. rg_prefix .. ' {q} || true" '
   options = options .. '--delimiter : '
   options = options .. '--ansi --disabled '
-  fzf_wrap_and_run({
+  fzf_wrap_and_run("grep", {
     source = {},
     options = options,
     sink = fzf_search_ripgrep_sink,
@@ -89,3 +89,5 @@ end
 vim.api.nvim_create_user_command('FZFGrep', fzf_search_ripgrep, {})
 vim.keymap.set('n', '<leader>sg', fzf_search_ripgrep, { silent = true})
 vim.keymap.set("n", "<leader>bsg", "<cmd>Vthird FZFGrep<CR>", {silent = true})
+
+vim.g.fzf_history_dir = '~/.local/share/fzf-history'

@@ -86,3 +86,4 @@ end
 
 vim.api.nvim_create_user_command('FZFGrep', fzf_search_ripgrep, {})
 vim.keymap.set('n', '<leader>sg', fzf_search_ripgrep, { silent = true})
+

@@ -77,10 +77,20 @@ local function fzf_search_ripgrep()
   options = options .. '--bind "change:reload:' .. rg_prefix .. ' {q} || true" '
   options = options .. '--delimiter : '
   options = options .. '--ansi --disabled '
+  options = options .. '--print-query '
   fzf_wrap_and_run("grep", {
     source = {},
     options = options,
-    sink = fzf_search_ripgrep_sink,
+    ['sink*'] = function(results)
+      if #results < 2 then return end
+      local query = results[1]
+      local selected = results[2]
+      fzf_search_ripgrep_sink(selected)
+      if query and query ~= '' then
+        vim.fn.setreg('/', query)
+        vim.o.hlsearch = true
+      end
+    end,
     window = 'enew'
   }, 0)
 end

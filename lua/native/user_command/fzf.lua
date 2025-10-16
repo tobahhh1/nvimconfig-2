@@ -42,7 +42,7 @@ local function fzf_search_help()
     source = helptags,
     sink = 'help',
     window="enew",
-  })
+  }, 0)
 end
 
 vim.api.nvim_create_user_command('FZFHelp', fzf_search_help, {})
@@ -54,7 +54,7 @@ local function fzf_search_files()
     sink = 'e',
     options = '--preview "bat --color=always {}" --preview-window=' .. vim.g.fzf_preview_window_opt .. ' --ansi',
     window = "enew"
-  })
+  }, 0)
 end
 
 vim.api.nvim_create_user_command('FZFFiles', fzf_search_files, {})
@@ -82,7 +82,7 @@ local function fzf_search_ripgrep()
     options = options,
     sink = fzf_search_ripgrep_sink,
     window = 'enew'
-  })
+  }, 0)
 end
 
 
@@ -91,3 +91,8 @@ vim.keymap.set('n', '<leader>sg', fzf_search_ripgrep, { silent = true})
 vim.keymap.set("n", "<leader>bsg", "<cmd>Vthird FZFGrep<CR>", {silent = true})
 
 vim.g.fzf_history_dir = '~/.local/share/fzf-history'
+vim.g.fzf_action = {
+  ['ctrl-t'] = 'tab split',
+  ['ctrl-x'] = 'split',
+  ['ctrl-v'] = 'vsplit'
+}

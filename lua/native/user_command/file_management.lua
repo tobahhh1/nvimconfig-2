@@ -17,17 +17,24 @@ function M.create_file(switch_to_new_file)
       return
     end
     local new_file_path = vim.fn.fnamemodify(input, ":p")
-    local file = io.open(new_file_path, "w")
-    if file == nil then
-      print("Error creating file: " .. new_file_path)
-      return
-    end
-    file:close()
-    if switch_to_new_file then
-      vim.cmd("edit " .. new_file_path)
+    if string.find(new_file_path, "/%s*$") then
+      if not vim.fn.mkdir(new_file_path, "p") then
+        print("Error creating directory: " .. new_file_path)
+      end
+    else
+      local file = io.open(new_file_path, "w")
+      if file == nil then
+        print("Error creating file: " .. new_file_path)
+        return
+      end
+      file:close()
+      if switch_to_new_file then
+        vim.cmd("edit " .. new_file_path)
+      end
     end
     print("File created: " .. new_file_path)
-  end)
+  end
+  )
 end
 
 function M.delete_file()
@@ -107,7 +114,7 @@ vim.api.nvim_create_user_command("RenameFile", M.rename_file, {})
 
 vim.api.nvim_set_keymap("n", "<leader>fc", "<cmd>CreateFile<cr>", { silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fd", "<cmd>DeleteFile<cr>", { silent = true })
-vim.api.nvim_set_keymap("n", "<leader>>fm", "<cmd>RenameFile<cr>", { silent = true })
+vim.api.nvim_set_keymap("n", "<leader>fm", "<cmd>RenameFile<cr>", { silent = true })
 vim.api.nvim_set_keymap("n", "<leader>fC", "<cmd>CreateFile!<cr>", { silent = true })
 
 return M

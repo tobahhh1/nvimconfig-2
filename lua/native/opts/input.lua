@@ -27,8 +27,10 @@ vim.g.input_window_start_width = 5
 vim.ui.input = function(opts, on_confirm)
   local buf = vim.api.nvim_create_buf(false, true)
 
-  local function get_width()
-    local text = vim.api.nvim_get_current_line()
+  local function get_width(text)
+    if text == nil then
+      text = vim.api.nvim_get_current_line()
+    end
     return math.max(#opts.prompt + 4, vim.g.input_window_start_width, #(vim.g.input_prompt .. text) + 2)
   end
 
@@ -73,9 +75,9 @@ vim.ui.input = function(opts, on_confirm)
     local new_width = get_width()
     vim.api.nvim_win_set_width(win, new_width)
     -- recenter window
-    vim.api.nvim_win_set_config(win, {
-      width = new_width,
-    })
+    -- vim.api.nvim_win_set_config(win, {
+    --   width = new_width,
+    -- })
   end
 
   vim.api.nvim_create_autocmd("TextChangedI", {
@@ -90,6 +92,8 @@ vim.ui.input = function(opts, on_confirm)
 
   if opts.default then
     -- Insert default text
+    local width = get_width(opts.default)
+    vim.api.nvim_win_set_width(win, width)
     vim.cmd("normal i" .. opts.default)
   end
   vim.cmd("startinsert!")

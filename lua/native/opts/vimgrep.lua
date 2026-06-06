@@ -54,3 +54,6 @@ vim.api.nvim_create_autocmd("QuickFixCmdPost", {
     pending_pattern = nil
   end,
 })
+
+vim.o.grepprg="rg --vimgrep"
+vim.o.grepformat="%f:%l:%c:%m"

@@ -8,5 +8,7 @@ require('nvim-treesitter.configs').setup {
 
 require('tbrow').setup({})
 
+require('superquickfix').setup()
+
 vim.keymap.set("n", "\\", "<cmd>Tbrow<cr>", { silent = true })
 vim.keymap.set("n", "<leader>b\\", "<cmd>Vthird Tbrow<cr>", { silent = true })

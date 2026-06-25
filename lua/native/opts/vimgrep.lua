@@ -1,4 +1,5 @@
 local pending_pattern = nil
+local pending_grep_pattern = nil
 
 local function extract_vimgrep_pattern(rest)
   if not rest or rest == "" then return nil end
@@ -36,12 +37,17 @@ end
 vim.api.nvim_create_autocmd("CmdlineLeave", {
   callback = function()
     pending_pattern = nil
+    pending_grep_pattern = nil
     if vim.fn.getcmdtype() ~= ":" then return end
     local cmdline = vim.fn.getcmdline()
 
     -- Match vimgrep / vimgrepadd and their abbreviations
     local rest = cmdline:match("^%s*vim?g?r?e?p?a?d?d?!?%s+(.*)")
     pending_pattern = extract_vimgrep_pattern(rest)
+
+    -- Match :grep / :grepadd (but not :vimgrep / :vimgrepadd)
+    local grep_rest = cmdline:match("^%s*grepa?d?d?!?%s+(.*)")
+    pending_grep_pattern = grep_rest and grep_rest:match("^(%S+)") or nil
   end,
 })
 
@@ -52,6 +58,16 @@ vim.api.nvim_create_autocmd("QuickFixCmdPost", {
     vim.fn.setreg("/", pending_pattern)
     vim.opt.hlsearch = true
     pending_pattern = nil
+  end,
+})
+
+vim.api.nvim_create_autocmd("QuickFixCmdPost", {
+  pattern = { "grep", "grepadd" },
+  callback = function()
+    if not pending_grep_pattern then return end
+    vim.fn.setreg("/", "\\v" .. pending_grep_pattern)
+    vim.opt.hlsearch = true
+    pending_grep_pattern = nil
   end,
 })
 

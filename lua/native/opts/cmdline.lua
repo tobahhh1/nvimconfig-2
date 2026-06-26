@@ -1,5 +1,5 @@
 
-local state = { buf = nil, win = nil }
+local state = { buf = nil, win = nil, active = false }
 
 local function get_text()
   return vim.fn.getcmdtype() .. vim.fn.getcmdline()
@@ -10,6 +10,7 @@ local function get_width(text)
 end
 
 local function open_window()
+  if not state.active then return end
   local text = get_text()
   local width = get_width(text)
 
@@ -50,6 +51,6 @@ local function close_window()
   state.win = nil
 end
 
-vim.api.nvim_create_autocmd("CmdlineEnter", { callback = function() vim.schedule(open_window) end })
+vim.api.nvim_create_autocmd("CmdlineEnter", { callback = function() state.active = true; vim.schedule(open_window) end })
 vim.api.nvim_create_autocmd("CmdlineChanged", { callback = function() vim.schedule(update_window) end })
-vim.api.nvim_create_autocmd("CmdlineLeave", { callback = close_window })
+vim.api.nvim_create_autocmd("CmdlineLeave", { callback = function() state.active = false; close_window() end })
